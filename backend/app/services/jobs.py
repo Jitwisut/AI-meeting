@@ -1,12 +1,43 @@
-"""Job queue abstraction: Redis + RQ in deployment, inline ("sync") for tests/dev."""
+"""Job queue abstraction.
+
+* ``rq``     — Redis + RQ worker (docker-compose / multi-replica deployments)
+* ``thread`` — in-process background threads; for single-container hosts without Redis
+               (e.g. Render free tier). Jobs lost on restart are recoverable via the
+               stale-processing retry in ``POST /process``.
+* ``sync``   — inline, for tests and local dev
+"""
 from __future__ import annotations
 
+import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 from app.config import get_settings
 
 QUEUE_NAME = "meetings"
 JOB_TIMEOUT_SECONDS = 3 * 60 * 60
+THREAD_WORKERS = 2
+
+_executor: ThreadPoolExecutor | None = None
+_executor_lock = threading.Lock()
+
+
+def _thread_executor() -> ThreadPoolExecutor:
+    global _executor
+    with _executor_lock:
+        if _executor is None:
+            _executor = ThreadPoolExecutor(max_workers=THREAD_WORKERS, thread_name_prefix="meeting-job")
+        return _executor
+
+
+def _run_in_thread(meeting_id: str) -> None:
+    from app.workers.pipeline import process_meeting
+
+    try:
+        process_meeting(meeting_id)
+    except Exception:  # noqa: BLE001 - process_meeting records failures itself; never kill the pool
+        logging.getLogger("worker").exception("background job crashed meeting=%s", meeting_id)
 
 
 def enqueue_processing(meeting_id: str) -> str | None:
@@ -15,6 +46,9 @@ def enqueue_processing(meeting_id: str) -> str | None:
         from app.workers.pipeline import process_meeting
 
         process_meeting(meeting_id)
+        return None
+    if s.queue_mode == "thread":
+        _thread_executor().submit(_run_in_thread, meeting_id)
         return None
     from redis import Redis
     from rq import Queue

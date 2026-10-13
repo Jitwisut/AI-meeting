@@ -1,4 +1,5 @@
 # Render Blueprint — demo deployment of the backend (mock providers, synthetic samples only).
+# One web service (API + background-thread jobs) and one Postgres database, both free tier.
 # New → Blueprint → select this repo, or open:
 #   https://render.com/deploy?repo=https://github.com/Jitwisut/AI-meeting
 # Do NOT use for real company data (plan §3: no production data on personal hosting).
@@ -17,15 +18,11 @@ services:
         fromDatabase:
           name: ai-meeting-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: ai-meeting-redis
-          property: connectionString
       - key: ENVIRONMENT
         value: demo
+      # jobs run in background threads inside the API container: no Redis needed
       - key: QUEUE_MODE
-        value: rq
+        value: thread
       # mock providers: anyone with the URL can use the demo, so only synthetic data
       - key: AUTH_MODE
         value: mock
@@ -46,13 +43,6 @@ services:
         value: "30"
       - key: TEMP_AUDIO_RETENTION_HOURS
         value: "6"
-
-  - type: keyvalue
-    name: ai-meeting-redis
-    plan: free
-    region: singapore
-    maxmemoryPolicy: noeviction
-    ipAllowList: [] # internal connections only
 
 databases:
   - name: ai-meeting-db

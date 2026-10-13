@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "demo", "production"] = "development"
     database_url: str = f"sqlite:///{BACKEND_DIR / 'dev.db'}"
     redis_url: str = "redis://localhost:6379/0"
-    queue_mode: Literal["rq", "sync"] = "sync"
+    queue_mode: Literal["rq", "thread", "sync"] = "sync"
     storage_dir: Path = BACKEND_DIR / "storage"
     samples_dir: Path = REPO_DIR / "samples"
     cors_origins: str = "http://localhost:3000"

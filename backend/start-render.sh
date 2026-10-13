@@ -1,8 +1,12 @@
 #!/bin/sh
-# Single-container entrypoint for hosts where the API and worker cannot share a disk (e.g. Render):
-# runs the RQ worker and the API side by side; if either exits, the container exits so the host restarts it.
+# Single-container entrypoint (e.g. Render).
+# QUEUE_MODE=thread (default here): jobs run in background threads inside the API process — no Redis needed.
+# QUEUE_MODE=rq: also start an RQ worker; if either process exits, the container exits so the host restarts it.
 set -eu
 mkdir -p "${STORAGE_DIR:-/tmp/mom-storage}"
+if [ "${QUEUE_MODE:-thread}" != "rq" ]; then
+  exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}" --proxy-headers --forwarded-allow-ips='*'
+fi
 rq worker meetings --url "$REDIS_URL" &
 WORKER=$!
 uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}" --proxy-headers --forwarded-allow-ips='*' &

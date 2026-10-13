@@ -184,3 +184,20 @@ def test_stale_processing_can_be_retried(client, monkeypatch):
     assert client.get(f"/api/meetings/{m['id']}").json()["processing_stale"] is True
     monkeypatch.undo()
     assert client.post(f"/api/meetings/{m['id']}/process").status_code == 202
+
+
+def test_thread_queue_mode_processes_in_background(client, monkeypatch):
+    import time
+
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "queue_mode", "thread")
+    m = create_sharepoint_meeting(client)
+    r = client.post(f"/api/meetings/{m['id']}/process")
+    assert r.status_code == 202
+    for _ in range(50):
+        status = client.get(f"/api/meetings/{m['id']}").json()["status"]
+        if status != "processing":
+            break
+        time.sleep(0.1)
+    assert status == "awaiting_review"

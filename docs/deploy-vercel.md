@@ -14,32 +14,21 @@
 
 Frontend บน Vercel เป็น HTTPS จึงเรียก backend ที่เป็น HTTP ไม่ได้ (เบราว์เซอร์บล็อก mixed content)
 
-ตัวอย่างบน Render (สำหรับ demo):
-1. New → **PostgreSQL** และ **Key Value (Redis)** → จด connection URL
-2. New → **Web Service** → เลือก repo → Root Directory `backend` → Runtime **Docker**
-   (Dockerfile ติดตั้ง `ffmpeg` ให้แล้ว)
-3. New → **Background Worker** → repo เดียวกัน, Root Directory `backend`, Docker,
-   Docker Command: `rq worker meetings --url $REDIS_URL --with-scheduler`
-4. ตั้ง Environment Variables ให้ทั้ง Web Service และ Worker เหมือนกัน:
+### Render (demo) — ใช้ Blueprint ใน repo
 
-```env
-DATABASE_URL=postgresql+psycopg://...        # จาก Render Postgres (เปลี่ยน prefix เป็น postgresql+psycopg://)
-REDIS_URL=redis://...
-QUEUE_MODE=rq
-STORAGE_DIR=/data
-CORS_ORIGINS=https://<ชื่อโปรเจกต์>.vercel.app
-AUTH_MODE=mock          # demo เท่านั้น — ใครมี URL ก็ใช้ได้
-GRAPH_MODE=mock
-STT_PROVIDER=mock
-SUMMARIZER=mock
-```
+repo มี `render.yaml` แล้ว: Dashboard → **New → Blueprint** → เลือก repo `Jitwisut/AI-meeting` → ตั้งชื่อ →
+**Deploy Blueprint** ระบบจะสร้าง
 
-> ข้อจำกัดสำคัญ: Web Service กับ Worker ต้องเห็นไฟล์เสียงชุดเดียวกัน (`STORAGE_DIR`) บน Docker Compose
-> ใช้ volume ร่วมกัน แต่บน Render/Container Apps สอง service **ไม่แชร์ดิสก์กัน** ต้องต่อ storage ร่วม
-> (เช่น Azure Files mount ที่ `/data`) หรือรันทั้งสองใน container เดียว ไม่เช่นนั้น worker จะหาไฟล์เสียงไม่เจอ
->
-> `samples/` ต้องอยู่ใน image ด้วยหากใช้ mock (`SAMPLES_DIR`) — ใน Docker Compose ใช้ volume mount
-> ถ้า deploy แยก ให้เพิ่ม `COPY` samples ลง image หรือ mount ไว้
+- `ai-meeting-db` — PostgreSQL free (Singapore, หมดอายุ 30 วัน)
+- `ai-meeting-api` — Docker web service free จาก `backend/Dockerfile.render`
+  (รวม ffmpeg + `samples/`, งานประมวลผลรันเป็น background thread ใน container เดียว — `QUEUE_MODE=thread`
+  จึงไม่ต้องใช้ Redis และไม่มีปัญหาไฟล์เสียงไม่แชร์กันระหว่าง API กับ worker)
+
+CORS เปิดให้ `https://ai-meeting*.vercel.app` (รวม preview) ผ่าน `CORS_ORIGIN_REGEX` ถ้าตั้งชื่อโปรเจกต์ Vercel
+เป็นอย่างอื่น ให้แก้ค่านี้ใน Render → ai-meeting-api → Environment
+
+> ทางเลือกสำหรับ production: แยก API กับ RQ worker (`QUEUE_MODE=rq` + Redis) และต่อ storage ร่วม
+> (เช่น Azure Files ที่ `/data`) บน Azure Container Apps
 
 ทดสอบ: เปิด `https://<backend>/api/health` ต้องได้ `{"status":"ok", ...}`
 
