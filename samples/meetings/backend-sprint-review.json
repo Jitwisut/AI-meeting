@@ -1,0 +1,25 @@
+{
+  "id": "backend-sprint-review",
+  "title": "Sprint Review ทีม Backend",
+  "language": "th-TH+en-US",
+  "agenda": ["API authentication", "Performance testing", "Deployment pipeline"],
+  "sentences": [
+    "โอเค เริ่ม sprint review กันเลยนะครับ",
+    "เรื่อง API authentication ตอนนี้ implement OAuth กับ Entra ID เสร็จแล้ว",
+    "ทีมตกลงว่าจะใช้ token แบบ on behalf of สำหรับเรียก Graph API",
+    "Performance testing ยังไม่ได้เริ่ม เพราะ environment ยังไม่พร้อม",
+    "คุณธนากรจะ setup load test environment ให้เสร็จภายใน sprint หน้า",
+    "ส่วน deployment pipeline มีคนถามว่าจะใช้ GitHub Actions หรือ Azure DevOps แต่ยังไม่มีข้อสรุป"
+  ],
+  "expected": {
+    "topics": [
+      {"title": "API authentication", "status": "resolved"},
+      {"title": "Performance testing", "status": "mentioned"},
+      {"title": "Deployment pipeline", "status": "mentioned"}
+    ],
+    "decisions": ["ใช้ token แบบ on behalf of สำหรับเรียก Graph API"],
+    "action_items": [
+      {"task": "setup load test environment", "owner": "คุณธนากร", "due": "sprint หน้า"}
+    ]
+  }
+}

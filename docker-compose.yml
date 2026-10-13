@@ -1,0 +1,72 @@
+# Local development stack. Everything defaults to mock providers (plan §10);
+# switch providers by editing .env (see docs/setup-credentials.md).
+name: ai-meeting-minutes
+
+x-backend-env: &backend-env
+  ENVIRONMENT: development
+  DATABASE_URL: postgresql+psycopg://mom:mom@db:5432/mom
+  REDIS_URL: redis://redis:6379/0
+  QUEUE_MODE: rq
+  STORAGE_DIR: /data
+  SAMPLES_DIR: /samples
+  CORS_ORIGINS: http://localhost:3000
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mom
+      POSTGRES_PASSWORD: mom
+      POSTGRES_DB: mom
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mom -d mom"]
+      interval: 3s
+      retries: 20
+    ports: ["5433:5432"]
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    env_file: [{ path: .env, required: false }]
+    environment: *backend-env
+    volumes:
+      - storage:/data
+      - ./samples:/samples:ro
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: ./backend
+    command: ["rq", "worker", "meetings", "--url", "redis://redis:6379/0", "--with-scheduler"]
+    env_file: [{ path: .env, required: false }]
+    environment: *backend-env
+    volumes:
+      - storage:/data
+      - ./samples:/samples:ro
+    depends_on:
+      backend: { condition: service_started }
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE: http://localhost:8000
+        NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-mock}
+        NEXT_PUBLIC_ENTRA_TENANT_ID: ${NEXT_PUBLIC_ENTRA_TENANT_ID:-}
+        NEXT_PUBLIC_ENTRA_SPA_CLIENT_ID: ${NEXT_PUBLIC_ENTRA_SPA_CLIENT_ID:-}
+        NEXT_PUBLIC_ENTRA_API_SCOPE: ${NEXT_PUBLIC_ENTRA_API_SCOPE:-}
+    ports: ["3000:3000"]
+    depends_on: [backend]
+
+volumes:
+  pgdata:
+  storage:

@@ -1,0 +1,43 @@
+{
+  "id": "backend-sprint-review",
+  "language": "th-TH+en-US",
+  "duration_ms": 49861,
+  "segments": [
+    {
+      "id": 1,
+      "start_ms": 500,
+      "end_ms": 4891,
+      "text": "โอเค เริ่ม sprint review กันเลยนะครับ"
+    },
+    {
+      "id": 2,
+      "start_ms": 5391,
+      "end_ms": 14124,
+      "text": "เรื่อง API authentication ตอนนี้ implement OAuth กับ Entra ID เสร็จแล้ว"
+    },
+    {
+      "id": 3,
+      "start_ms": 14624,
+      "end_ms": 23015,
+      "text": "ทีมตกลงว่าจะใช้ token แบบ on behalf of สำหรับเรียก Graph API"
+    },
+    {
+      "id": 4,
+      "start_ms": 23515,
+      "end_ms": 30269,
+      "text": "Performance testing ยังไม่ได้เริ่ม เพราะ environment ยังไม่พร้อม"
+    },
+    {
+      "id": 5,
+      "start_ms": 30769,
+      "end_ms": 38517,
+      "text": "คุณธนากรจะ setup load test environment ให้เสร็จภายใน sprint หน้า"
+    },
+    {
+      "id": 6,
+      "start_ms": 39017,
+      "end_ms": 49361,
+      "text": "ส่วน deployment pipeline มีคนถามว่าจะใช้ GitHub Actions หรือ Azure DevOps แต่ยังไม่มีข้อสรุป"
+    }
+  ]
+}

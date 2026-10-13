@@ -1,0 +1,286 @@
+@import "tailwindcss";
+
+/* Theme follows the OS (light/dark) like macOS; data-theme on <html> overrides it. */
+
+:root {
+  color-scheme: light;
+  --wallpaper-base: #eef2f1;
+  --wallpaper-a: rgba(64, 196, 160, 0.22);
+  --wallpaper-b: rgba(126, 110, 230, 0.16);
+  --wallpaper-c: rgba(255, 170, 110, 0.14);
+
+  --paper: #f4f6f6;
+  --surface: #ffffff;
+  --glass: rgba(255, 255, 255, 0.66);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --sidebar: rgba(246, 248, 248, 0.58);
+
+  --ink: #1c1d1f;
+  --ink-soft: #5c6169;
+  --ink-faint: #8b9099;
+  --line: rgba(20, 30, 40, 0.1);
+  --line-soft: rgba(20, 30, 40, 0.055);
+  --hover: rgba(20, 30, 40, 0.05);
+
+  --pine: #0f8a6c;
+  --pine-dark: #0a6a53;
+  --pine-wash: rgba(15, 138, 108, 0.12);
+  --on-accent: #ffffff;
+  --amber: #a85f00;
+  --amber-wash: rgba(255, 159, 10, 0.15);
+  --rust: #d1291c;
+  --rust-wash: rgba(255, 59, 48, 0.11);
+  --sky: #0062cc;
+  --sky-wash: rgba(10, 132, 255, 0.12);
+
+  --shadow-window: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04),
+    0 12px 32px -12px rgba(20, 40, 50, 0.18);
+  --shadow-pop: 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 20px 50px -18px rgba(20, 40, 50, 0.35);
+  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --wallpaper-base: #0d1113;
+    --wallpaper-a: rgba(40, 190, 150, 0.2);
+    --wallpaper-b: rgba(110, 90, 230, 0.2);
+    --wallpaper-c: rgba(240, 120, 80, 0.08);
+    --paper: #16191b;
+    --surface: #1f2225;
+    --glass: rgba(34, 37, 40, 0.62);
+    --glass-strong: rgba(36, 39, 42, 0.86);
+    --glass-edge: rgba(255, 255, 255, 0.08);
+    --sidebar: rgba(26, 29, 31, 0.55);
+    --ink: #f1f2f4;
+    --ink-soft: #a9aeb6;
+    --ink-faint: #767b84;
+    --line: rgba(255, 255, 255, 0.11);
+    --line-soft: rgba(255, 255, 255, 0.06);
+    --hover: rgba(255, 255, 255, 0.06);
+    --pine: #3dd1a4;
+    --pine-dark: #6fe0bd;
+    --pine-wash: rgba(61, 209, 164, 0.15);
+    --on-accent: #03140f;
+    --amber: #ffb547;
+    --amber-wash: rgba(255, 181, 71, 0.14);
+    --rust: #ff6b60;
+    --rust-wash: rgba(255, 107, 96, 0.14);
+    --sky: #6aaeff;
+    --sky-wash: rgba(106, 174, 255, 0.15);
+    --shadow-window: 0 0 0 0.5px rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.3),
+      0 16px 40px -14px rgba(0, 0, 0, 0.6);
+    --shadow-pop: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 24px 60px -18px rgba(0, 0, 0, 0.75);
+    --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --wallpaper-base: #0d1113;
+  --wallpaper-a: rgba(40, 190, 150, 0.2);
+  --wallpaper-b: rgba(110, 90, 230, 0.2);
+  --wallpaper-c: rgba(240, 120, 80, 0.08);
+  --paper: #16191b;
+  --surface: #1f2225;
+  --glass: rgba(34, 37, 40, 0.62);
+  --glass-strong: rgba(36, 39, 42, 0.86);
+  --glass-edge: rgba(255, 255, 255, 0.08);
+  --sidebar: rgba(26, 29, 31, 0.55);
+  --ink: #f1f2f4;
+  --ink-soft: #a9aeb6;
+  --ink-faint: #767b84;
+  --line: rgba(255, 255, 255, 0.11);
+  --line-soft: rgba(255, 255, 255, 0.06);
+  --hover: rgba(255, 255, 255, 0.06);
+  --pine: #3dd1a4;
+  --pine-dark: #6fe0bd;
+  --pine-wash: rgba(61, 209, 164, 0.15);
+  --on-accent: #03140f;
+  --amber: #ffb547;
+  --amber-wash: rgba(255, 181, 71, 0.14);
+  --rust: #ff6b60;
+  --rust-wash: rgba(255, 107, 96, 0.14);
+  --sky: #6aaeff;
+  --sky-wash: rgba(106, 174, 255, 0.15);
+  --shadow-window: 0 0 0 0.5px rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 16px 40px -14px rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 24px 60px -18px rgba(0, 0, 0, 0.75);
+  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-glass: var(--glass);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-hover: var(--hover);
+  --color-pine: var(--pine);
+  --color-pine-dark: var(--pine-dark);
+  --color-pine-wash: var(--pine-wash);
+  --color-on-accent: var(--on-accent);
+  --color-amber: var(--amber);
+  --color-amber-wash: var(--amber-wash);
+  --color-rust: var(--rust);
+  --color-rust-wash: var(--rust-wash);
+  --color-sky: var(--sky);
+  --color-sky-wash: var(--sky-wash);
+  /* SF on Apple devices, IBM Plex Sans Thai elsewhere (and for Thai glyphs SF lacks) */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-plex), "IBM Plex Sans Thai",
+    "Noto Sans Thai", system-ui, sans-serif;
+  --radius-panel: 14px;
+  --ease-mac: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+}
+
+html,
+body {
+  color: var(--ink);
+  background-color: var(--wallpaper-base);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(60vw 50vh at 8% 0%, var(--wallpaper-a), transparent 70%),
+    radial-gradient(50vw 60vh at 100% 20%, var(--wallpaper-b), transparent 70%),
+    radial-gradient(60vw 50vh at 60% 110%, var(--wallpaper-c), transparent 70%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: var(--pine-wash);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--pine) 45%, transparent);
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+
+/* --- macOS-like material ----------------------------------------------------- */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: var(--shadow-window), var(--highlight);
+}
+.glass-strong {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(36px) saturate(190%);
+  backdrop-filter: blur(36px) saturate(190%);
+  box-shadow: var(--shadow-pop), var(--highlight);
+}
+.vibrancy {
+  background: var(--sidebar);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: 0 0 0 0.5px var(--glass-edge), var(--shadow-window);
+}
+
+/* thin overlay scrollbars like macOS */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent;
+}
+
+/* --- motion ------------------------------------------------------------------- */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.995);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.page-in {
+  animation: page-in 420ms var(--ease-mac) both;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pop-in {
+  animation: pop-in 260ms var(--ease-spring) both;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+/* the "tape": transcript timeline rail */
+.tape {
+  background-image: linear-gradient(var(--line), var(--line));
+  background-size: 1px 100%;
+  background-position: 4.25rem 0;
+  background-repeat: no-repeat;
+}
+
+/* 3D tilt card (driven by --rx/--ry from pointer position) */
+.tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0);
+  transition: transform 500ms var(--ease-mac), box-shadow 300ms var(--ease-mac);
+  transform-style: preserve-3d;
+}
+.tilt:hover {
+  transition: transform 120ms linear, box-shadow 300ms var(--ease-mac);
+}
+.tilt .lift {
+  transform: translateZ(28px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .tilt {
+    transform: none !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+}
