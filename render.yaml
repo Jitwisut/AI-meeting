@@ -1,5 +1,5 @@
 # Render Blueprint — demo deployment of the backend (mock providers, synthetic samples only).
-# One web service (API + background-thread jobs) and one Postgres database, both free tier.
+# One free web service (API + background-thread jobs). Database: external Postgres (e.g. Neon free).
 # New → Blueprint → select this repo, or open:
 #   https://render.com/deploy?repo=https://github.com/Jitwisut/AI-meeting
 # Do NOT use for real company data (plan §3: no production data on personal hosting).
@@ -14,10 +14,10 @@ services:
     dockerContext: .
     healthCheckPath: /api/health
     envVars:
+      # Postgres from Neon (free, persistent). Paste the connection string in the Render dashboard;
+      # never commit it. Format: postgresql://USER:PASSWORD@HOST/DB?sslmode=require
       - key: DATABASE_URL
-        fromDatabase:
-          name: ai-meeting-db
-          property: connectionString
+        sync: false
       - key: ENVIRONMENT
         value: demo
       # jobs run in background threads inside the API container: no Redis needed
@@ -44,9 +44,3 @@ services:
       - key: TEMP_AUDIO_RETENTION_HOURS
         value: "6"
 
-databases:
-  - name: ai-meeting-db
-    plan: free
-    region: singapore
-    databaseName: mom
-    user: mom

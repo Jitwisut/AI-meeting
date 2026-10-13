@@ -19,7 +19,9 @@ Frontend บน Vercel เป็น HTTPS จึงเรียก backend ท�
 repo มี `render.yaml` แล้ว: Dashboard → **New → Blueprint** → เลือก repo `Jitwisut/AI-meeting` → ตั้งชื่อ →
 **Deploy Blueprint** ระบบจะสร้าง
 
-- `ai-meeting-db` — PostgreSQL free (Singapore, หมดอายุ 30 วัน)
+- ฐานข้อมูล: ใช้ **Neon Postgres** (ฟรี ข้อมูลไม่หมดอายุ) เพราะ Render ให้ Postgres ฟรีได้ 1 ตัวต่อ workspace —
+  สร้าง project ที่ neon.tech (region AWS Singapore) แล้วนำ connection string ไปใส่ `DATABASE_URL`
+  ของ ai-meeting-api ใน Render → Environment ด้วยตัวเอง
 - `ai-meeting-api` — Docker web service free จาก `backend/Dockerfile.render`
   (รวม ffmpeg + `samples/`, งานประมวลผลรันเป็น background thread ใน container เดียว — `QUEUE_MODE=thread`
   จึงไม่ต้องใช้ Redis และไม่มีปัญหาไฟล์เสียงไม่แชร์กันระหว่าง API กับ worker)
