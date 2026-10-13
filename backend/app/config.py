@@ -9,7 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -24,13 +24,14 @@ class Settings(BaseSettings):
     )
 
     # --- runtime -------------------------------------------------------
-    environment: Literal["development", "test", "production"] = "development"
+    environment: Literal["development", "test", "demo", "production"] = "development"
     database_url: str = f"sqlite:///{BACKEND_DIR / 'dev.db'}"
     redis_url: str = "redis://localhost:6379/0"
     queue_mode: Literal["rq", "sync"] = "sync"
     storage_dir: Path = BACKEND_DIR / "storage"
     samples_dir: Path = REPO_DIR / "samples"
     cors_origins: str = "http://localhost:3000"
+    cors_origin_regex: str = ""  # e.g. ^https://ai-meeting[a-z0-9-]*\.vercel\.app$ (Vercel previews)
     public_api_base: str = "http://localhost:8000"
     public_web_base: str = "http://localhost:3000"
 
@@ -87,6 +88,15 @@ class Settings(BaseSettings):
     default_language: str = "th-TH"
 
     dev_mock_users: list[str] = Field(default_factory=lambda: ["dev-user", "other-user"])
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, v: str) -> str:
+        """Hosting providers (e.g. Render) hand out postgres:// URLs; SQLAlchemy needs the driver name."""
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v[len(prefix):]
+        return v
 
     @property
     def cors_origin_list(self) -> list[str]:

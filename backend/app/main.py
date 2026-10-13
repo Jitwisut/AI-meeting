@@ -37,7 +37,8 @@ def create_app() -> FastAPI:
     app = FastAPI(title="AI Meeting Minutes API", version="0.1.0",
                   docs_url="/api/docs" if s.environment != "production" else None,
                   openapi_url="/api/openapi.json" if s.environment != "production" else None)
-    app.add_middleware(CORSMiddleware, allow_origins=s.cors_origin_list, allow_credentials=False,
+    app.add_middleware(CORSMiddleware, allow_origins=s.cors_origin_list,
+                       allow_origin_regex=s.cors_origin_regex or None, allow_credentials=False,
                        allow_methods=["GET", "POST", "PATCH", "PUT"],
                        allow_headers=["Authorization", "Content-Type", "X-Mock-User"],
                        expose_headers=["Retry-After", "Content-Disposition"])

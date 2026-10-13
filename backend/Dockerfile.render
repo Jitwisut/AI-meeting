@@ -1,0 +1,19 @@
+# Render / single-container image. Build context = repository root (see render.yaml).
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY backend/requirements.txt .
+RUN pip install -r requirements.txt
+COPY backend/app ./app
+COPY backend/start-render.sh ./start-render.sh
+# synthetic sample audio for the mock SharePoint/STT demo (no real data)
+COPY samples ./samples
+
+ENV SAMPLES_DIR=/app/samples STORAGE_DIR=/tmp/mom-storage
+RUN useradd --create-home --uid 10001 appuser
+USER appuser
+CMD ["./start-render.sh"]

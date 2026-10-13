@@ -1,0 +1,62 @@
+# Render Blueprint — demo deployment of the backend (mock providers, synthetic samples only).
+# New → Blueprint → select this repo, or open:
+#   https://render.com/deploy?repo=https://github.com/Jitwisut/AI-meeting
+# Do NOT use for real company data (plan §3: no production data on personal hosting).
+
+services:
+  - type: web
+    name: ai-meeting-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-meeting-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: ai-meeting-redis
+          property: connectionString
+      - key: ENVIRONMENT
+        value: demo
+      - key: QUEUE_MODE
+        value: rq
+      # mock providers: anyone with the URL can use the demo, so only synthetic data
+      - key: AUTH_MODE
+        value: mock
+      - key: GRAPH_MODE
+        value: mock
+      - key: STT_PROVIDER
+        value: mock
+      - key: SUMMARIZER
+        value: mock
+      # allows the Vercel production URL and its preview deployments
+      - key: CORS_ORIGIN_REGEX
+        value: ^https://ai-meeting[a-z0-9-]*\.vercel\.app$
+      - key: CORS_ORIGINS
+        value: http://localhost:3000
+      - key: MAX_UPLOAD_MB
+        value: "50"
+      - key: MAX_AUDIO_MINUTES
+        value: "30"
+      - key: TEMP_AUDIO_RETENTION_HOURS
+        value: "6"
+
+  - type: keyvalue
+    name: ai-meeting-redis
+    plan: free
+    region: singapore
+    maxmemoryPolicy: noeviction
+    ipAllowList: [] # internal connections only
+
+databases:
+  - name: ai-meeting-db
+    plan: free
+    region: singapore
+    databaseName: mom
+    user: mom
