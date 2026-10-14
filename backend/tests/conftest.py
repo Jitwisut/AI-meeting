@@ -16,6 +16,9 @@ def client(tmp_path, monkeypatch):
         "STORAGE_DIR": str(tmp_path / "storage"), "SAMPLES_DIR": str(SAMPLES), "QUEUE_MODE": "sync",
         "AUTH_MODE": "mock", "GRAPH_MODE": "mock", "STT_PROVIDER": "mock", "SUMMARIZER": "mock",
         "SHAREPOINT_ALLOWED_SITE_IDS": "", "ENTRA_APPROVER_ROLE": "",
+        # never let real credentials from a developer's .env leak into tests
+        "GEMINI_MODEL": "gemini-3.6-flash,gemini-3.8-flash,gemini-3.5-flash-lite", "GEMINI_STT_MODEL": "gemini-3.6-flash,gemini-3.8-flash,gemini-3.5-flash-lite",
+        "GEMINI_API_KEY": "", "AZURE_SPEECH_KEY": "", "AZURE_OPENAI_API_KEY": "", "ENTRA_API_CLIENT_SECRET": "",
     }
     for k, v in env.items():
         monkeypatch.setenv(k, v)

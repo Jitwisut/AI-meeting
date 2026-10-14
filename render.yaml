@@ -37,9 +37,9 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.6-flash,gemini-3.8-flash,gemini-3.5-flash-lite
       - key: GEMINI_STT_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.6-flash,gemini-3.8-flash,gemini-3.5-flash-lite
       # allows the Vercel production URL and its preview deployments
       - key: CORS_ORIGIN_REGEX
         value: ^https://ai-meeting[a-z0-9-]*\.vercel\.app$

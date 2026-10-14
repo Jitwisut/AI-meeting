@@ -46,7 +46,8 @@ def test_stt_request_and_timestamp_cleanup(gemini_on, monkeypatch, tmp_path):
     out = GeminiSpeechToText().transcribe(wav, "th-TH", "a.wav")
 
     url, body = calls[0]
-    assert "gemini-2.5-flash:generateContent" in url
+    assert "gemini-3.6-flash:generateContent" in url
+    assert "temperature" not in body["generationConfig"]  # Gemini 3: keep default temperature
     parts = body["contents"][0]["parts"]
     assert parts[0]["inline_data"]["mime_type"] == "audio/mp3" and len(parts[0]["inline_data"]["data"]) > 100
     assert body["generationConfig"]["responseMimeType"] == "application/json"
@@ -138,3 +139,36 @@ def test_full_pipeline_with_gemini_stt_and_summary(client, gemini_on, monkeypatc
     owners = {a["task"]: a["owner"] for a in s["action_items"]}
     assert owners["เขียน migration"] == "คุณสมชาย"
     assert owners["งานที่แต่งขึ้น"] is None  # validator strips an owner not present in the evidence
+
+
+def test_gemini_25_keeps_zero_temperature(gemini_on, monkeypatch):
+    seen = {}
+
+    def fake_post(url, headers, json, timeout):  # noqa: A002
+        seen["config"] = json["generationConfig"]
+        return _reply("ok")
+
+    monkeypatch.setattr(gemini.httpx, "post", fake_post)
+    gemini.generate([gemini.text_part("x")], model="gemini-2.5-flash")
+    assert seen["config"]["temperature"] == 0
+
+
+def test_overloaded_model_falls_back_to_next(gemini_on, monkeypatch):
+    urls = []
+
+    def fake_post(url, headers, json, timeout):  # noqa: A002
+        urls.append(url.rsplit("/", 1)[1])
+        return _reply("", status=503) if "3.6" in url else _reply("from-3.8")
+
+    monkeypatch.setattr(gemini.httpx, "post", fake_post)
+    assert gemini.generate([gemini.text_part("x")]) == "from-3.8"
+    assert urls == ["gemini-3.6-flash:generateContent", "gemini-3.8-flash:generateContent"]
+
+
+def test_all_models_overloaded_gives_thai_error(gemini_on, monkeypatch):
+    from app.errors import AppError
+
+    monkeypatch.setattr(gemini.httpx, "post", lambda *a, **k: _reply("", status=503))
+    with pytest.raises(AppError) as exc:
+        gemini.generate([gemini.text_part("x")])
+    assert exc.value.code == "gemini_overloaded"

@@ -7,6 +7,7 @@ service (e.g. Azure OpenAI / Azure AI Speech inside the company tenant).
 from __future__ import annotations
 
 import base64
+import logging
 import time
 
 import httpx
@@ -45,13 +46,13 @@ def text_part(text: str) -> dict:
     return {"text": text}
 
 
-def generate(parts: list[dict], *, system: str | None = None, schema: dict | None = None,
-             model: str | None = None, max_output_tokens: int | None = None, purpose: str = "Gemini") -> str:
-    """Call generateContent and return the concatenated text of the first candidate."""
-    s = get_settings()
-    if not s.gemini_api_key:
-        raise AppError(500, "gemini_not_configured", "ยังไม่ได้ตั้งค่า GEMINI_API_KEY")
-    config: dict = {"temperature": 0}
+FALLBACK_STATUSES = (404, 429, 500, 502, 503, 504)  # try the next model in the list on these
+
+
+def _body(parts: list[dict], model: str, system: str | None, schema: dict | None,
+          max_output_tokens: int | None) -> dict:
+    # Gemini 3 models are tuned for the default temperature (1.0); lower values can cause looping.
+    config: dict = {} if model.startswith("gemini-3") else {"temperature": 0}
     if schema:
         config["responseMimeType"] = "application/json"
         config["responseSchema"] = to_gemini_schema(schema)
@@ -60,33 +61,64 @@ def generate(parts: list[dict], *, system: str | None = None, schema: dict | Non
     body: dict = {"contents": [{"role": "user", "parts": parts}], "generationConfig": config}
     if system:
         body["systemInstruction"] = {"parts": [{"text": system}]}
-    url = f"{API_BASE}/{model or s.gemini_model}:generateContent"
+    return body
+
+
+def model_list(setting: str) -> list[str]:
+    """`GEMINI_MODEL` may list several models (comma separated), tried in order."""
+    return [m.strip() for m in setting.split(",") if m.strip()]
+
+
+def generate(parts: list[dict], *, system: str | None = None, schema: dict | None = None,
+             model: str | None = None, max_output_tokens: int | None = None, purpose: str = "Gemini") -> str:
+    """Call generateContent and return the concatenated text of the first candidate.
+
+    ``model`` (or GEMINI_MODEL) may be a comma-separated list: when a model is overloaded (503),
+    throttled (429) or unavailable (404) the next one is tried immediately; if all fail, the whole
+    list is retried with backoff.
+    """
+    s = get_settings()
+    if not s.gemini_api_key:
+        raise AppError(500, "gemini_not_configured", "ยังไม่ได้ตั้งค่า GEMINI_API_KEY")
+    models = model_list(model or s.gemini_model)
+    resp: httpx.Response | None = None
+    used = models[0]
+    timed_out = False
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            resp = httpx.post(url, headers={"x-goog-api-key": s.gemini_api_key}, json=body,
-                              timeout=s.llm_timeout_seconds)
-        except (httpx.TimeoutException, httpx.NetworkError) as exc:
-            if attempt == MAX_ATTEMPTS:
-                raise AppError(504, "gemini_timeout", f"{purpose}: Gemini ไม่ตอบกลับภายในเวลาที่กำหนด") from exc
-            time.sleep(2 ** attempt)
-            continue
-        if resp.status_code in (429, 500, 502, 503, 504) and attempt < MAX_ATTEMPTS:
-            wait = resp.headers.get("Retry-After")
+        for used in models:
+            try:
+                resp = httpx.post(f"{API_BASE}/{used}:generateContent", headers={"x-goog-api-key": s.gemini_api_key},
+                                  json=_body(parts, used, system, schema, max_output_tokens),
+                                  timeout=s.llm_timeout_seconds)
+            except (httpx.TimeoutException, httpx.NetworkError):
+                timed_out, resp = True, None
+                continue
+            if resp.status_code in FALLBACK_STATUSES:
+                continue
+            break
+        if resp is not None and resp.status_code not in FALLBACK_STATUSES:
+            break
+        if attempt < MAX_ATTEMPTS:
+            wait = resp.headers.get("Retry-After") if resp is not None else None
             time.sleep(min(int(wait) if wait and wait.isdigit() else 5 * 2 ** attempt, MAX_RETRY_WAIT))
-            continue
-        break
 
+    if resp is None:
+        raise AppError(504, "gemini_timeout", f"{purpose}: Gemini ไม่ตอบกลับภายในเวลาที่กำหนด") if timed_out else \
+            AppError(502, "gemini_failed", f"{purpose}: เรียก Gemini ไม่สำเร็จ")
     if resp.status_code == 429:
         raise AppError(429, "gemini_quota", f"{purpose}: ใช้โควตา Gemini ฟรีเกินกำหนด กรุณาลองใหม่ภายหลัง",
                        retry_after=60)
     if resp.status_code in (400, 403) and "API key" in resp.text:
         raise AppError(502, "gemini_auth_failed", "GEMINI_API_KEY ไม่ถูกต้องหรือไม่มีสิทธิ์ใช้ model นี้")
     if resp.status_code == 404:
-        raise AppError(502, "gemini_model_not_found", f"ไม่พบ model Gemini ที่ตั้งค่าไว้ ({model or s.gemini_model})")
+        raise AppError(502, "gemini_model_not_found", f"ไม่พบ model Gemini ที่ตั้งค่าไว้ ({', '.join(models)})")
+    if resp.status_code == 503:
+        raise AppError(503, "gemini_overloaded", f"{purpose}: Gemini มีผู้ใช้งานมากชั่วคราว กรุณาลองใหม่ภายหลัง")
     if resp.status_code >= 400:
         raise AppError(502, "gemini_failed", f"{purpose}: Gemini ทำงานไม่สำเร็จ (HTTP {resp.status_code})")
 
+    logging.getLogger("gemini").info("%s answered by %s", purpose, used)
     data = resp.json()
     candidates = data.get("candidates") or []
     if not candidates:
