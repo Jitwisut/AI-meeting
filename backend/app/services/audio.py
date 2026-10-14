@@ -109,6 +109,17 @@ def convert_to_wav(src: Path, dest: Path) -> None:
         raise AppError(422, "convert_failed", "ไม่สามารถแปลงไฟล์เสียงได้")
 
 
+def encode_compact(src: Path, dest: Path, bitrate: str = "32k") -> None:
+    """Small mono MP3 for sending speech to cloud models (~4 KB per second of audio)."""
+    proc = subprocess.run(
+        [_require_tool("ffmpeg"), "-y", "-v", "error", "-i", str(src), "-vn", "-ac", "1", "-ar", str(TARGET_RATE),
+         "-c:a", "libmp3lame", "-b:a", bitrate, str(dest)],
+        capture_output=True, text=True, timeout=900,
+    )
+    if proc.returncode != 0 or not dest.exists():
+        raise AppError(500, "encode_failed", "ไม่สามารถเตรียมไฟล์เสียงสำหรับส่งถอดเสียงได้")
+
+
 def split_wav(src: Path, out_dir: Path, chunk_seconds: int) -> list[tuple[Path, int]]:
     """Split a long WAV into chunks; returns (path, offset_ms) pairs."""
     out_dir.mkdir(parents=True, exist_ok=True)

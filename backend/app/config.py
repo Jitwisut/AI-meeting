@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # --- provider switches ---------------------------------------------
     auth_mode: Literal["mock", "entra"] = "mock"
     graph_mode: Literal["mock", "real"] = "mock"
-    stt_provider: Literal["mock", "azure"] = "mock"
+    stt_provider: Literal["mock", "azure", "gemini"] = "mock"
     summarizer: Literal["mock", "azure_openai", "gemini"] = "mock"
 
     # --- Microsoft Entra ID --------------------------------------------
@@ -74,7 +74,9 @@ class Settings(BaseSettings):
     azure_openai_deployment: str = ""
     azure_openai_api_version: str = "2024-10-21"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-2.5-flash"  # summariser model
+    gemini_stt_model: str = "gemini-2.5-flash"  # must accept audio input
+    gemini_stt_chunk_seconds: int = 600  # shorter chunks = more accurate timestamps, small inline payloads
     summary_chunk_chars: int = 12000
     llm_timeout_seconds: int = 120
 

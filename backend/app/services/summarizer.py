@@ -26,6 +26,7 @@ import httpx
 
 from app.config import get_settings
 from app.errors import AppError
+from app.services import gemini
 
 TOPIC_STATUSES = ("not_mentioned", "mentioned", "resolved", "unclear")
 _STATUS_RANK = {"not_mentioned": 0, "unclear": 1, "mentioned": 2, "resolved": 3}
@@ -169,20 +170,7 @@ class AzureOpenAIEngine:
                           None).strip()
 
 
-def _gemini_schema(schema: dict) -> dict:
-    """Gemini's responseSchema is an OpenAPI subset: no additionalProperties, nullable flag."""
-    out: dict = {}
-    for k, v in schema.items():
-        if k == "additionalProperties":
-            continue
-        if k == "type" and isinstance(v, list):
-            out["type"] = [t for t in v if t != "null"][0]
-            out["nullable"] = "null" in v
-        elif isinstance(v, dict):
-            out[k] = _gemini_schema(v) if k != "properties" else {pk: _gemini_schema(pv) for pk, pv in v.items()}
-        else:
-            out[k] = v
-    return out
+_gemini_schema = gemini.to_gemini_schema  # kept for backwards compatibility
 
 
 class GeminiEngine:
@@ -195,27 +183,11 @@ class GeminiEngine:
     name = "gemini"
 
     def __init__(self) -> None:
-        s = get_settings()
-        if not s.gemini_api_key:
+        if not get_settings().gemini_api_key:
             raise AppError(500, "llm_not_configured", "ยังไม่ได้ตั้งค่า GEMINI_API_KEY")
-        self.url = f"https://generativelanguage.googleapis.com/v1beta/models/{s.gemini_model}:generateContent"
-        self.key = s.gemini_api_key
-        self.timeout = s.llm_timeout_seconds
 
     def _generate(self, system: str, user: str, schema: dict | None) -> str:
-        config: dict = {"temperature": 0}
-        if schema:
-            config["responseMimeType"] = "application/json"
-            config["responseSchema"] = _gemini_schema(schema)
-        body = {"systemInstruction": {"parts": [{"text": system}]},
-                "contents": [{"role": "user", "parts": [{"text": user}]}],
-                "generationConfig": config}
-        resp = httpx.post(self.url, headers={"x-goog-api-key": self.key}, json=body, timeout=self.timeout)
-        _raise_llm_http(resp, "Gemini")
-        try:
-            return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError) as exc:
-            raise AppError(502, "llm_empty", "Gemini ไม่ได้ส่งผลลัพธ์กลับมา (อาจถูกบล็อกโดย safety filter)") from exc
+        return gemini.generate([gemini.text_part(user)], system=system, schema=schema, purpose="สรุปการประชุม")
 
     def extract(self, segments, agenda, title_hint, part):  # noqa: ANN001
         return _parse_json(self._generate(SYSTEM_PROMPT, build_user_prompt(segments, agenda, title_hint, part),

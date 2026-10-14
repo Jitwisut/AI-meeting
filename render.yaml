@@ -28,10 +28,18 @@ services:
         value: mock
       - key: GRAPH_MODE
         value: mock
+      # Gemini free tier for real transcription + summary (test audio only: free-tier data may be
+      # used by Google to improve its products). Set GEMINI_API_KEY in the dashboard; never commit it.
       - key: STT_PROVIDER
-        value: mock
+        value: gemini
       - key: SUMMARIZER
-        value: mock
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_STT_MODEL
+        value: gemini-2.5-flash
       # allows the Vercel production URL and its preview deployments
       - key: CORS_ORIGIN_REGEX
         value: ^https://ai-meeting[a-z0-9-]*\.vercel\.app$

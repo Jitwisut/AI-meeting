@@ -2,7 +2,7 @@
 
 import { useResource } from "@/lib/hooks";
 import type { AppSettings, Me } from "@/lib/types";
-import { Field, inputClass, Switch } from "./ui";
+import { Alert, Field, inputClass, Switch } from "./ui";
 
 export interface SetupValue {
   title: string;
@@ -24,8 +24,15 @@ export function agendaList(v: SetupValue): string[] {
 export function MeetingSetup({ value, onChange }: { value: SetupValue; onChange: (v: SetupValue) => void }) {
   const { data: settings } = useResource<AppSettings>("/api/settings");
   const set = (patch: Partial<SetupValue>) => onChange({ ...value, ...patch });
+  const usesGemini = settings?.providers.stt === "gemini" || settings?.providers.summarizer === "gemini";
   return (
     <div className="space-y-4">
+      {usesGemini && (
+        <Alert tone="warn">
+          ระบบนี้ใช้ Gemini แบบฟรี Google อาจนำเสียงและข้อความไปใช้ปรับปรุงบริการ
+          ใช้เฉพาะไฟล์เสียงทดสอบ ห้ามใช้เสียงประชุมจริงของบริษัท
+        </Alert>
+      )}
       <Field label="ชื่อการประชุม" hint="เว้นว่างไว้เพื่อใช้ชื่อไฟล์">
         <input className={inputClass} value={value.title} maxLength={300} onChange={(e) => set({ title: e.target.value })} />
       </Field>

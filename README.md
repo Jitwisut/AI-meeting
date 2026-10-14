@@ -78,7 +78,7 @@ scripts/    generate_samples.py, evaluate.py, e2e_mock.sh
 | MVP 1 Entra ID sign-in | ✅ MSAL (PKCE) + JWT validation + OBO — ทดสอบด้วย mock แล้ว **ยังไม่ได้ทดสอบกับ tenant จริง** |
 | MVP 2 เลือก/ดาวน์โหลดไฟล์ SharePoint | ✅ mock ทดสอบแล้ว / Graph adapter รอทดสอบจริง |
 | MVP 3 อัปโหลด MP3/WAV + อัดเสียงผ่านเบราว์เซอร์ | ✅ ทดสอบด้วย MediaRecorder จริงใน Chromium (สัญญาณสังเคราะห์) — ควรลองกับไมโครโฟนจริงและ Safari |
-| MVP 4 ถอดเสียง + timestamp | ✅ Azure fast transcription adapter (รอ key) + mock |
+| MVP 4 ถอดเสียง + timestamp | ✅ Azure fast transcription (รอ key), Gemini (ฟรี, test audio เท่านั้น) + mock |
 | MVP 5 สรุปพร้อมหลักฐาน | ✅ Azure OpenAI / Gemini / mock + validator กันการแต่งข้อมูล |
 | MVP 6 Review / แก้ไข / อนุมัติ | ✅ |
 | MVP 7 Export DOCX → SharePoint | ✅ (PDF ผ่านการพิมพ์ของเบราว์เซอร์) |

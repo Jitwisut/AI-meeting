@@ -73,7 +73,20 @@ SUMMARIZER=azure_openai
 
 แล้ว `docker compose up -d --build` (ค่า `NEXT_PUBLIC_*` ถูกฝังตอน build frontend จึงต้อง build ใหม่)
 
-## 4. ข้อควรระวังเรื่อง Gemini
+## 4. Gemini (ทางเลือกฟรีสำหรับ demo)
+
+| | Azure AI Speech | Gemini free tier |
+|---|---|---|
+| ฟรี | 5 ชม./เดือน เฉพาะ real-time (fast transcription/batch ที่ระบบใช้ **ไม่ฟรี**) | ฟรีภายในโควตาคำขอ ไม่ต้องใช้บัตร |
+| เวลาในบทถอดเสียง | แม่นระดับคำ | โดยประมาณ (ระดับวินาที) |
+
+วิธีเปิดใช้:
+1. https://aistudio.google.com/apikey → **Create API key**
+2. ตั้งค่า `STT_PROVIDER=gemini`, `SUMMARIZER=gemini`, `GEMINI_API_KEY=<key>` (บน Render: ai-meeting-api → Environment)
+3. ระบบส่งเสียงเป็น MP3 ช่วงละ `GEMINI_STT_CHUNK_SECONDS` (ค่าเริ่มต้น 10 นาที) ไปถอดเสียง แล้วตรวจ/ปรับ timestamp
+   ให้อยู่ในช่วงที่ถูกต้องก่อนบันทึก หากเจอข้อความ "ใช้โควตา Gemini ฟรีเกินกำหนด" ให้รอแล้วกดลองใหม่
+
+### ข้อควรระวังเรื่อง Gemini
 
 Gemini แบบ free tier: Google อาจนำ prompt/ผลลัพธ์ไปใช้ปรับปรุงบริการ ซึ่งขัดกับ plan §9 (ข้อตกลง data processing)
 **ใช้ได้เฉพาะไฟล์เสียงสังเคราะห์ใน `samples/`** ห้ามใช้กับเสียงหรือ transcript ประชุมจริงของบริษัท

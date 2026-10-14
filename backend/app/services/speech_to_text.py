@@ -19,7 +19,7 @@ import httpx
 
 from app.config import get_settings
 from app.errors import AppError
-from app.services import audio
+from app.services import audio, gemini
 
 
 class SpeechToText(Protocol):
@@ -89,6 +89,114 @@ class AzureFastTranscription:
         return _number(segments)
 
 
+GEMINI_STT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "segments": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "start_seconds": {"type": "number"},
+                    "end_seconds": {"type": "number"},
+                    "text": {"type": "string"},
+                },
+                "required": ["start_seconds", "end_seconds", "text"],
+            },
+        }
+    },
+    "required": ["segments"],
+}
+
+_LANGUAGE_HINT = {
+    "th-TH": "Thai",
+    "en-US": "English",
+    "th-TH+en-US": "Thai mixed with English words and phrases (keep English terms in English)",
+}
+
+GEMINI_STT_SYSTEM = """You are a precise speech-to-text engine for business meeting recordings.
+Rules:
+- Transcribe verbatim in the original spoken language(s). Never translate, summarise, correct grammar or add content.
+- Do not label or guess speakers.
+- Split into segments at natural sentence or pause boundaries, each at most about 20 seconds long.
+- start_seconds and end_seconds are measured from the beginning of THIS audio clip, in seconds (decimals allowed),
+  in chronological order.
+- Write a word you cannot make out as [ไม่ชัด]. Never invent words for unclear audio.
+- If the clip contains no intelligible speech, return an empty segments list."""
+
+
+class GeminiSpeechToText:
+    """Google Gemini audio understanding, used as a free-tier transcription option.
+
+    Audio is sent as small MP3 chunks (``GEMINI_STT_CHUNK_SECONDS``) inline; timestamps returned by
+    the model are clamped to each chunk and offset to the meeting timeline. Timestamps from a
+    generative model are approximate (seconds), unlike Azure AI Speech word timings.
+    Free tier: Google may use the audio to improve its products — synthetic/test audio only.
+    """
+
+    name = "gemini"
+
+    def __init__(self) -> None:
+        s = get_settings()
+        if not s.gemini_api_key:
+            raise AppError(500, "stt_not_configured", "ยังไม่ได้ตั้งค่า GEMINI_API_KEY สำหรับถอดเสียง")
+        self.model = s.gemini_stt_model
+        self.chunk_seconds = s.gemini_stt_chunk_seconds
+
+    def _transcribe_chunk(self, wav: Path, language: str, duration_ms: int) -> list[dict]:
+        with tempfile.TemporaryDirectory() as tmp:
+            mp3 = Path(tmp) / "chunk.mp3"
+            audio.encode_compact(wav, mp3)
+            data = mp3.read_bytes()
+        hint = _LANGUAGE_HINT.get(language, language)
+        text = gemini.generate(
+            [gemini.audio_part(data, "audio/mp3"),
+             gemini.text_part(f"Transcribe this meeting audio. Spoken language: {hint}. "
+                              f"Clip length: {duration_ms / 1000:.1f} seconds.")],
+            system=GEMINI_STT_SYSTEM, schema=GEMINI_STT_SCHEMA, model=self.model,
+            max_output_tokens=32768, purpose="ถอดเสียง",
+        )
+        try:
+            raw = json.loads(text).get("segments", [])
+        except (json.JSONDecodeError, AttributeError) as exc:
+            raise AppError(502, "stt_invalid_json", "ผลถอดเสียงจาก Gemini ไม่อยู่ในรูปแบบที่ถูกต้อง") from exc
+        return _clean_model_segments(raw, duration_ms)
+
+    def transcribe(self, wav_path: Path, language: str, source_name: str | None) -> list[dict]:
+        info = audio.probe(wav_path)
+        if info.duration_ms <= self.chunk_seconds * 1000:
+            return _number(self._transcribe_chunk(wav_path, language, info.duration_ms))
+        segments: list[dict] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            for chunk, offset in audio.split_wav(wav_path, Path(tmp), self.chunk_seconds):
+                chunk_ms = audio.probe(chunk).duration_ms
+                for seg in self._transcribe_chunk(chunk, language, chunk_ms):
+                    segments.append({**seg, "start_ms": seg["start_ms"] + offset, "end_ms": seg["end_ms"] + offset})
+        return _number(segments)
+
+
+def _clean_model_segments(raw: list, duration_ms: int) -> list[dict]:
+    """Validate model-produced timestamps: numeric, inside the clip, end > start, chronological."""
+    out: list[dict] = []
+    for item in raw if isinstance(raw, list) else []:
+        if not isinstance(item, dict):
+            continue
+        text = str(item.get("text") or "").strip()
+        if not text:
+            continue
+        try:
+            start = int(float(item.get("start_seconds", 0)) * 1000)
+            end = int(float(item.get("end_seconds", 0)) * 1000)
+        except (TypeError, ValueError):
+            continue
+        start = min(max(0, start), duration_ms)
+        if out:
+            start = max(start, out[-1]["start_ms"])  # keep chronological order
+        end = min(max(end, start + 500), duration_ms) if duration_ms > start else start
+        out.append({"start_ms": start, "end_ms": end, "text": text})
+    return out
+
+
 class MockSpeechToText:
     """Returns the reference transcript for known sample files.
 
@@ -114,4 +222,9 @@ class MockSpeechToText:
 
 
 def get_stt() -> SpeechToText:
-    return AzureFastTranscription() if get_settings().stt_provider == "azure" else MockSpeechToText()
+    provider = get_settings().stt_provider
+    if provider == "azure":
+        return AzureFastTranscription()
+    if provider == "gemini":
+        return GeminiSpeechToText()
+    return MockSpeechToText()

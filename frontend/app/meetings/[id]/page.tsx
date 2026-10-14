@@ -18,6 +18,12 @@ const Waveform3D = dynamic(() => import("@/components/three/Waveform3D"), { ssr:
 
 type Tab = "summary" | "topics" | "publish";
 
+const PROVIDER_LABEL: Record<string, string> = {
+  mock: "ระบบจำลอง",
+  azure_speech: "Azure AI Speech",
+  gemini: "Gemini (เวลาโดยประมาณ)",
+};
+
 /** Envelope from transcript timing when the audio file has expired: speech = raised bars. */
 function envelopeFromSegments(segments: Segment[], durationMs: number, n = 180): number[] {
   const out = new Array(n).fill(0.04);
@@ -345,7 +351,7 @@ export default function MeetingPage() {
                   />
                 </div>
                 <p className="border-t border-line-soft px-4 py-2 text-xs text-ink-faint">
-                  {segments.length} ช่วง ถอดเสียงโดย {transcriptRes.data?.provider === "mock" ? "ระบบจำลอง" : "Azure AI Speech"} ไม่มีการแยกผู้พูด
+                  {segments.length} ช่วง ถอดเสียงโดย {PROVIDER_LABEL[transcriptRes.data?.provider ?? ""] ?? transcriptRes.data?.provider} ไม่มีการแยกผู้พูด
                 </p>
               </div>
             </section>
